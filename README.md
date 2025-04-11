@@ -19,5 +19,5 @@ A simple and user-friendly Python tool with a graphical interface that compresse
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/HeitorSpectre/Video-Compressor-10MB.git
+git clone https://github.com/HeitorSpectre/Video-Compressor-10MB-.git
 cd Video-Compressor-10MB
