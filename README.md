@@ -21,29 +21,41 @@ A simple and user-friendly Python tool with a graphical interface that compresse
 ```bash
 git clone https://github.com/HeitorSpectre/Video-Compressor-10MB-.git
 cd Video-Compressor-10MB
+```
 
 2. Instale o Python
 Baixe e instale o Python 3.10 ou superior:
+
+```bash
 👉 https://www.python.org/downloads/
+```
 
 ⚠️ Marque a opção "Add Python to PATH" durante a instalação.
 
 3. Instale o FFmpeg
 Windows:
+
+```bash
 Baixe o zip: https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip
+```
 
 Extraia o conteúdo (ex: C:\ffmpeg)
 
-Adicione C:\ffmpeg\bin ao seu PATH (painel de controle > sistema > variáveis de ambiente)
+Adicione ```C:\ffmpeg\bin ao seu PATH (painel de controle > sistema > variáveis de ambiente)```
 
 Linux/macOS:
-bash
+
+```bash
 Copiar
 Editar
 sudo apt install ffmpeg    # Debian/Ubuntu
 brew install ffmpeg        # macOS
+```
+
 4. Instale as dependências Python
-bash
+   
+```bash
 Copiar
 Editar
 pip install -r requirements.txt
+```
