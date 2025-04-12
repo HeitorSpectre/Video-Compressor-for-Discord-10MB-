@@ -4,11 +4,13 @@ import shutil
 import threading
 import tkinter as tk
 from tkinter import messagebox, ttk, filedialog
+import json
 
 INPUT_FOLDER = "Input"
 OUTPUT_FOLDER = "Output"
 TARGET_SIZE_MB = 10
 TARGET_SIZE_BYTES = TARGET_SIZE_MB * 1024 * 1024
+CONFIG_FILE = "config.json"
 
 ffmpeg_path = "ffmpeg"
 ffprobe_path = "ffprobe"
@@ -17,15 +19,25 @@ def ensure_folders():
     os.makedirs(INPUT_FOLDER, exist_ok=True)
     os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 
+def save_config():
+    with open(CONFIG_FILE, 'w') as f:
+        json.dump({"ffmpeg_path": ffmpeg_path}, f)
+
+def load_config():
+    global ffmpeg_path, ffprobe_path
+    if os.path.exists(CONFIG_FILE):
+        with open(CONFIG_FILE, 'r') as f:
+            config = json.load(f)
+            ffmpeg_path = config.get("ffmpeg_path", "ffmpeg")
+            ffprobe_path = ffmpeg_path.replace("ffmpeg.exe", "ffprobe.exe")
+
 def select_ffmpeg_path():
     global ffmpeg_path, ffprobe_path
     selected_path = filedialog.askopenfilename(title="Selecione o ffmpeg.exe", filetypes=[("Executável", "ffmpeg.exe")])
     if selected_path:
         ffmpeg_path = selected_path
         ffprobe_path = ffmpeg_path.replace("ffmpeg.exe", "ffprobe.exe")
-        messagebox.showinfo("FFmpeg selecionado", f"FFmpeg configurado em:\n{ffmpeg_path}")
-    else:
-        messagebox.showerror("Erro", "Você precisa selecionar o ffmpeg.exe para continuar.")
+        save_config()
 
 def ffmpeg_available():
     try:
@@ -65,8 +77,8 @@ def compress_video(input_path, output_path, quality):
             print(f"Não foi possível obter a duração do vídeo: {input_path}")
             return
 
-        # Bitrate ajustado para garantir que o vídeo final fique < 10MB
-        target_bitrate = int(((TARGET_SIZE_BYTES - 1024 * 100) * 8) / duration)
+        safe_target_size_bytes = int(TARGET_SIZE_BYTES * 0.95)
+        target_bitrate = int((safe_target_size_bytes * 8) / duration)
 
         if quality == "Alta":
             preset = "fast"
@@ -74,28 +86,56 @@ def compress_video(input_path, output_path, quality):
         elif quality == "Média":
             preset = "faster"
             scale = "1280:720"
-        else:  # Baixa
+        else:
             preset = "ultrafast"
-            scale = "854:480"
+            scale = "640:360"
 
-        compress_cmd = [ffmpeg_path, "-i", input_path]
+        log_file = "ffmpeg2pass"
 
+        first_pass = [ffmpeg_path, "-y", "-i", input_path, "-c:v", "libx264"]
         if scale:
-            compress_cmd += ["-vf", f"scale={scale}"]
-
-        compress_cmd += [
+            first_pass += ["-vf", f"scale={scale}"]
+        first_pass += [
             "-b:v", f"{target_bitrate}",
             "-maxrate", f"{target_bitrate}",
             "-bufsize", f"{target_bitrate}",
             "-preset", preset,
-            "-y", output_path
+            "-pass", "1",
+            "-an",
+            "-f", "mp4", "NUL" if os.name == "nt" else "/dev/null"
         ]
 
-        print(f"Comprimindo {os.path.basename(input_path)} em qualidade {quality.lower()}...")
-        subprocess.run(compress_cmd, stderr=subprocess.PIPE, stdout=subprocess.PIPE, timeout=180)
+        second_pass = [ffmpeg_path, "-y", "-i", input_path, "-c:v", "libx264"]
+        if scale:
+            second_pass += ["-vf", f"scale={scale}"]
+        second_pass += [
+            "-b:v", f"{target_bitrate}",
+            "-maxrate", f"{target_bitrate}",
+            "-bufsize", f"{target_bitrate}",
+            "-preset", preset,
+            "-pass", "2",
+            "-c:a", "aac",
+            "-b:a", "96k",
+            output_path
+        ]
+
+        print(f"Comprimindo {os.path.basename(input_path)} em qualidade {quality.lower()} com 2-pass...")
+
+        subprocess.run(first_pass, stderr=subprocess.PIPE, stdout=subprocess.PIPE, timeout=120)
+        subprocess.run(second_pass, stderr=subprocess.PIPE, stdout=subprocess.PIPE, timeout=120)
+
+        for ext in [".log", "-0.log", "-0.log.mbtree"]:
+            try:
+                os.remove(f"{log_file}{ext}")
+            except FileNotFoundError:
+                pass
 
         final_size = os.path.getsize(output_path)
-        print(f"✔️ {os.path.basename(input_path)} comprimido com sucesso. Novo tamanho: {round(final_size / 1024 / 1024, 2)} MB")
+        if final_size > TARGET_SIZE_BYTES:
+            print(f"❌ {os.path.basename(input_path)} ficou com {round(final_size / 1024 / 1024, 2)} MB! Excluindo...")
+            os.remove(output_path)
+        else:
+            print(f"✔️ {os.path.basename(input_path)} comprimido com sucesso. Novo tamanho: {round(final_size / 1024 / 1024, 2)} MB")
 
     except subprocess.TimeoutExpired:
         print(f"⏱️ Tempo excedido ao comprimir {input_path}. Pulando...")
@@ -127,17 +167,22 @@ def start_compression_thread(quality):
 
 def create_gui():
     ensure_folders()
+    load_config()
+
+    if not ffmpeg_available():
+        select_ffmpeg_path()
+        if not ffmpeg_available():
+            messagebox.showerror("Erro", "FFmpeg ainda não foi encontrado.")
+            return
 
     root = tk.Tk()
     root.title("Compressor de Vídeos < 10MB")
-    root.geometry("420x280")
+    root.geometry("400x250")
     root.resizable(False, False)
 
-    menubar = tk.Menu(root)
-    config_menu = tk.Menu(menubar, tearoff=0)
-    config_menu.add_command(label="Selecionar FFmpeg", command=select_ffmpeg_path)
-    menubar.add_cascade(label="⚙️ Configurações", menu=config_menu)
-    root.config(menu=menubar)
+    menu = tk.Menu(root)
+    root.config(menu=menu)
+    menu.add_command(label="Configurações", command=select_ffmpeg_path)
 
     tk.Label(root, text="💾 Compressor de Vídeos para Discord", font=("Arial", 14)).pack(pady=10)
     tk.Label(root, text=f"Coloque os vídeos na pasta '{INPUT_FOLDER}'\ne escolha a qualidade desejada", font=("Arial", 10)).pack(pady=5)
