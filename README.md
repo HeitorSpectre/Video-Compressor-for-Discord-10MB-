@@ -19,7 +19,7 @@ A simple and user-friendly tool with a graphical interface that compresses your 
 
 No setup or extraction needed!
 
-1. Download the `.exe` file from the [Releases](https://github.com/HeitorSpectre/Video-Compressor-10MB-/releases) page  
+1. Download the `.exe` file from the [Releases](https://github.com/HeitorSpectre/Video-Compressor-for-Discord-10MB-/releases/tag/1.0) page  
 2. Run the file directly (double-click)  
 3. Place your videos inside the `Input` folder  
 4. Select compression quality (High, Medium, Low)  
