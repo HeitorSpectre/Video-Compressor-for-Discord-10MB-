@@ -3,28 +3,49 @@ import subprocess
 import shutil
 import threading
 import tkinter as tk
-from tkinter import messagebox, ttk
+from tkinter import messagebox, ttk, filedialog
 
 INPUT_FOLDER = "Input"
 OUTPUT_FOLDER = "Output"
 TARGET_SIZE_MB = 10
 TARGET_SIZE_BYTES = TARGET_SIZE_MB * 1024 * 1024
 
+ffmpeg_path = "ffmpeg"
+ffprobe_path = "ffprobe"
+
 def ensure_folders():
     os.makedirs(INPUT_FOLDER, exist_ok=True)
     os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 
+def select_ffmpeg_path():
+    global ffmpeg_path, ffprobe_path
+    selected_path = filedialog.askopenfilename(title="Selecione o ffmpeg.exe", filetypes=[("Executável", "ffmpeg.exe")])
+    if selected_path:
+        ffmpeg_path = selected_path
+        ffprobe_path = ffmpeg_path.replace("ffmpeg.exe", "ffprobe.exe")
+        messagebox.showinfo("FFmpeg selecionado", f"FFmpeg configurado em:\n{ffmpeg_path}")
+    else:
+        messagebox.showerror("Erro", "Você precisa selecionar o ffmpeg.exe para continuar.")
+
+def ffmpeg_available():
+    try:
+        subprocess.run([ffmpeg_path, "-version"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        subprocess.run([ffprobe_path, "-version"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        return True
+    except Exception:
+        return False
+
 def get_duration(input_path):
     try:
         result = subprocess.check_output([
-            "ffprobe", "-v", "error",
+            ffprobe_path, "-v", "error",
             "-show_entries", "format=duration",
             "-of", "default=noprint_wrappers=1:nokey=1",
             input_path
         ], stderr=subprocess.STDOUT)
         return float(result.strip())
-    except subprocess.CalledProcessError as e:
-        print(f"Erro ao obter duração: {e.output.decode()}")
+    except Exception as e:
+        print(f"Erro ao obter duração: {e}")
         return None
 
 def compress_video(input_path, output_path, quality):
@@ -44,9 +65,9 @@ def compress_video(input_path, output_path, quality):
             print(f"Não foi possível obter a duração do vídeo: {input_path}")
             return
 
-        target_bitrate = int((TARGET_SIZE_BYTES * 8) / duration)
+        # Bitrate ajustado para garantir que o vídeo final fique < 10MB
+        target_bitrate = int(((TARGET_SIZE_BYTES - 1024 * 100) * 8) / duration)
 
-        # Configurações baseadas na qualidade escolhida
         if quality == "Alta":
             preset = "fast"
             scale = None
@@ -57,7 +78,7 @@ def compress_video(input_path, output_path, quality):
             preset = "ultrafast"
             scale = "854:480"
 
-        compress_cmd = ["ffmpeg", "-i", input_path]
+        compress_cmd = [ffmpeg_path, "-i", input_path]
 
         if scale:
             compress_cmd += ["-vf", f"scale={scale}"]
@@ -71,7 +92,7 @@ def compress_video(input_path, output_path, quality):
         ]
 
         print(f"Comprimindo {os.path.basename(input_path)} em qualidade {quality.lower()}...")
-        subprocess.run(compress_cmd, stderr=subprocess.PIPE, stdout=subprocess.PIPE, timeout=120)
+        subprocess.run(compress_cmd, stderr=subprocess.PIPE, stdout=subprocess.PIPE, timeout=180)
 
         final_size = os.path.getsize(output_path)
         print(f"✔️ {os.path.basename(input_path)} comprimido com sucesso. Novo tamanho: {round(final_size / 1024 / 1024, 2)} MB")
@@ -106,10 +127,17 @@ def start_compression_thread(quality):
 
 def create_gui():
     ensure_folders()
+
     root = tk.Tk()
     root.title("Compressor de Vídeos < 10MB")
-    root.geometry("400x250")
+    root.geometry("420x280")
     root.resizable(False, False)
+
+    menubar = tk.Menu(root)
+    config_menu = tk.Menu(menubar, tearoff=0)
+    config_menu.add_command(label="Selecionar FFmpeg", command=select_ffmpeg_path)
+    menubar.add_cascade(label="⚙️ Configurações", menu=config_menu)
+    root.config(menu=menubar)
 
     tk.Label(root, text="💾 Compressor de Vídeos para Discord", font=("Arial", 14)).pack(pady=10)
     tk.Label(root, text=f"Coloque os vídeos na pasta '{INPUT_FOLDER}'\ne escolha a qualidade desejada", font=("Arial", 10)).pack(pady=5)
