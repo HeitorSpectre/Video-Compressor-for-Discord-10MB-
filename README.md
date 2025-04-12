@@ -21,7 +21,7 @@ A simple and user-friendly tool with a graphical interface that compresses your 
 
 No setup or extraction needed!
 
-1. Download the `.exe` file from the [Releases](https://github.com/HeitorSpectre/Video-Compressor-for-Discord-10MB-/releases/tag/1.0) page  
+1. Download the `.exe` file from the [Releases](https://github.com/HeitorSpectre/Video-Compressor-for-Discord-10MB-/releases/tag/1.1) page  
 2. Run the file directly (double-click)  
 3. When prompted, click the **"Config"** button to choose the location of `ffmpeg.exe` on your system  
 4. Place your videos inside the `Input` folder  
