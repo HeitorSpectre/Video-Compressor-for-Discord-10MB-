@@ -35,8 +35,7 @@ If you prefer running the script manually via Python:
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/HeitorSpectre/Video-Compressor-10MB-.git
-cd Video-Compressor-10MB
+git clone https://github.com/HeitorSpectre/Video-Compressor-for-Discord-10MB-
 ```
 
 ### 2. Install Python
