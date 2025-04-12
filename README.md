@@ -11,7 +11,9 @@ A simple and user-friendly tool with a graphical interface that compresses your 
 - ✅ Automatically copies videos already under 10MB without recompression  
 - ✅ Automatically creates `Input` and `Output` folders  
 - ✅ Supports `.mp4`, `.mov`, `.avi`, `.mkv` formats  
-- ✅ Drag-and-drop simplicity (just place videos into the Input folder)
+- ✅ Drag-and-drop simplicity (just place videos into the Input folder)  
+- ✅ **Mandatory** configuration of the FFmpeg path on your system  
+- ✅ Ensures the compressed video size is **strictly under 10MB** (no 10.1MB allowed!)
 
 ---
 
@@ -21,10 +23,13 @@ No setup or extraction needed!
 
 1. Download the `.exe` file from the [Releases](https://github.com/HeitorSpectre/Video-Compressor-for-Discord-10MB-/releases/tag/1.0) page  
 2. Run the file directly (double-click)  
-3. Place your videos inside the `Input` folder  
-4. Select compression quality (High, Medium, Low)  
-5. Click “Compress Videos”  
-6. Compressed videos will be saved to the `Output` folder — ready for Discord!
+3. When prompted, click the **"Config"** button to choose the location of `ffmpeg.exe` on your system  
+4. Place your videos inside the `Input` folder  
+5. Select compression quality (High, Medium, Low)  
+6. Click “Compress Videos”  
+7. Compressed videos will be saved to the `Output` folder — ready for Discord!
+
+> ⚠️ **Important**: The FFmpeg path must be configured before using the tool. If it's not set, the application will prompt you to select the location of `ffmpeg.exe` when you first launch it. This is a **mandatory** step.
 
 ---
 
